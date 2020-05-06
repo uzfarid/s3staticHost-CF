@@ -1,0 +1,65 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description" : "Autoscaling group & Elastic Load Balancer creation",
+   "Parameters" : {
+    "BucketName": {
+      "Type": "String",
+      "Description" : "Unique Bucket Name",
+      "Default" : "testsite.foo.com"
+    },
+
+    "Environment": {
+        "Type": "String",
+        "Description" : "staging area: dev, qa, prod",
+        "Default" : "dev"
+      },
+    
+     "OriginAccessIdentity" : {
+          "Type" : "String",
+          "Description" : "ABCDEGHIGKLMN" 
+                                 
+        }
+    },
+    "Resources": {
+        "S3Bucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName":{"Ref":"BucketName"},
+                "WebsiteConfiguration": {
+                    "IndexDocument": "index.html",
+                    "ErrorDocument": "error.html"
+                }
+            },
+            "DeletionPolicy": "Retain"
+        },
+        "BucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "PolicyDocument": {
+                    "Id": "PrivateAccessViaCloudFront",
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            
+                            "Effect": "Allow",
+                            "Principal": {
+                                  "AWS":[{ "Fn::Join" : [ " ", [ "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity" ,{ "Ref": "OriginAccessIdentity" }] ] }]
+                              },
+                             "Action": "s3:GetObject",
+                             "Resource": { "Fn::Join" : ["", ["arn:aws:s3:::", { "Ref" : "S3bucket" } , "/*" ]]}
+                        }
+                    ]
+                },
+                "Tags" : [
+                    { "Key" : "Environment", "Value" : { "Ref" : "Environment" } }
+                ],
+                "Bucket": {
+                    "Ref": "S3Bucket"
+                }
+            }
+        }
+    },
+    "Outputs": {
+        
+    }
+}
